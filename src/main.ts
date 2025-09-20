@@ -127,7 +127,7 @@ class TetrisGame {
 
     this.gameState.nextPieces.forEach(value => {
       const pieceElement = document.createElement("div");
-      pieceElement.className = `next-piece piece-${value}`;
+      pieceElement.className = `cell cell-${value}`;
       pieceElement.textContent = value.toString();
       this.nextQueueElement.appendChild(pieceElement);
     });
@@ -174,10 +174,12 @@ class TetrisGame {
 
       if (value !== null) {
         htmlCell.textContent = value.toString();
-        htmlCell.classList.add("occupied", `piece-${value}`);
+        htmlCell.classList.add("occupied", `cell-${value}`);
       } else {
         htmlCell.textContent = "";
         htmlCell.classList.remove("occupied");
+        // Remove piece-specific classes
+        htmlCell.className = htmlCell.className.replace(/cell-\d+/g, '').trim();
         // Ensure base cell class remains
         if (!htmlCell.classList.contains("cell")) {
           htmlCell.classList.add("cell");
