@@ -26,7 +26,7 @@ class TetrisGame {
   private gameState: GameState;
   private gridElement!: HTMLElement;
   private queueElements: HTMLElement[] = [];
-  private columnAreas: HTMLElement[] = [];
+  private activeColumnIndicator!: HTMLElement;
 
   constructor() {
     this.gameState = {
@@ -77,13 +77,14 @@ class TetrisGame {
     // Create clickable column areas
     this.createColumnAreas();
 
+    // Create active column indicator
+    this.createActiveColumnIndicator();
+
     // Create queue elements in the grid
     this.createQueueElements();
   }
 
   private createColumnAreas(): void {
-    this.columnAreas = [];
-
     for (let col = 0; col < gridWidth; col++) {
       const columnArea = document.createElement("div");
       columnArea.className = "column-area";
@@ -105,8 +106,18 @@ class TetrisGame {
       });
 
       this.gridElement.appendChild(columnArea);
-      this.columnAreas.push(columnArea);
     }
+  }
+
+  private createActiveColumnIndicator(): void {
+    this.activeColumnIndicator = document.createElement("div");
+    this.activeColumnIndicator.className = "active-column-indicator";
+    setCellSizeStyles(this.activeColumnIndicator, {
+      top: gridTop - cellGap / 2 - 1 - cellGap,
+      width: 1 + cellGap,
+      height: (gridHeight + 1) * (1 + cellGap),
+    });
+    this.gridElement.appendChild(this.activeColumnIndicator);
   }
 
   private createQueueElements(): void {
@@ -141,18 +152,18 @@ class TetrisGame {
   private setSelectedColumn(col: number): void {
     this.gameState.selectedColumn = col;
 
-    // Clear all indicators
-    this.columnAreas.forEach((columnArea) => {
-      columnArea.classList.remove("active");
-    });
-
-    // Set active indicator for selected column
-    if (this.columnAreas[col]) {
-      this.columnAreas[col].classList.add("active");
-    }
+    // Move active column indicator to selected column
+    this.updateActiveColumnIndicator();
 
     // Update next piece position to follow selected column
     this.updateNextPiecePosition();
+  }
+
+  private updateActiveColumnIndicator(): void {
+    const col = this.gameState.selectedColumn;
+    setCellSizeStyles(this.activeColumnIndicator, {
+      left: padding + col * (1 + cellGap) - cellGap / 2,
+    });
   }
 
   private updateNextPiecePosition(): void {

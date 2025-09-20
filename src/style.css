@@ -47,6 +47,14 @@ body {
     background: #ffffff11;
 }
 
+.active-column-indicator {
+    background: #ffffff22;
+}
+
+.active-column-indicator, .grid .cell {
+    transition: left 0.1s ease-out, top 0.1s ease-out;
+}
+
 .cell {
     background-color: #ecf0f1;
     border-radius: 4px;

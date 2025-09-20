@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Development Commands
 
-- **Start development server**: `npm run dev` - Runs Vite dev server with hot reload
+- **Start development server**: `npm run dev` - Runs Vite dev server with hot reload (NEVER run this - user runs it themselves)
 - **Build for production**: `npm run build` - Compiles TypeScript and builds with Vite
 - **Preview production build**: `npm run preview` - Serves the built application locally
 - **Type checking**: `npm run typecheck` - Run TypeScript compiler for type checking only
