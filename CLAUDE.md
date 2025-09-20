@@ -13,7 +13,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Architecture
 
-This is a 2048 game implementation using:
+This is a Tetris-style game with 2048 elements implementation using:
 
 - **Vite** as the build tool and dev server
 - **TypeScript** with strict configuration for type safety
@@ -21,10 +21,19 @@ This is a 2048 game implementation using:
 - **ESNext modules** with bundler resolution
 
 ### Key Files
-- `src/main.ts` - Entry point that renders into `#app` div
-- `src/style.css` - Global styles
+- `src/main.ts` - Main game implementation with TetrisGame class
+- `src/gameHelpers.ts` - Shared utility functions and constants
+- `src/style.css` - Game styles and CSS variables
+- `src/gallery.ts` - Additional gallery functionality
 - `index.html` - HTML template with app container
 - `tsconfig.json` - Strict TypeScript configuration with modern ES2022 target
+
+### Game Architecture
+- **TetrisGame class**: Main game controller handling state, DOM manipulation, and user interactions
+- **Grid-based layout**: 6x7 grid with column-based piece dropping
+- **Dynamic sizing**: Responsive grid that scales based on viewport size using CSS custom properties
+- **Piece queue system**: Shows next 3 pieces to drop with visual preview
+- **Powers of 2**: Game pieces are powers of 2 from 2^1 to 2^20 (1M)
 
 ### TypeScript Configuration
 - Uses strict mode with all linting options enabled
@@ -32,8 +41,7 @@ This is a 2048 game implementation using:
 - No emit mode (handled by Vite)
 - Targets ES2022 with DOM types included
 
-### Development Notes
-- The project is currently minimal with just a "It works!" placeholder
-- Game logic and UI components need to be implemented in TypeScript
-- No testing framework is currently configured
-- ESLint and Prettier are available but may need configuration files
+### ESLint Configuration
+- Comprehensive setup with TypeScript, JSON, and CSS linting
+- Uses modern ESLint flat config format
+- Configured for browser globals and TypeScript recommended rules

@@ -18,7 +18,7 @@ const fullHeight = gridTop + gridHeight + (gridHeight - 1) * cellGap + padding;
 interface GameState {
   grid: (number | null)[][];
   nextPieces: number[];
-  selectedColumn: number | null;
+  selectedColumn: number;
   isGameRunning: boolean;
 }
 
@@ -34,7 +34,7 @@ class TetrisGame {
         .fill(null)
         .map(() => Array(gridWidth).fill(null)),
       nextPieces: [],
-      selectedColumn: null,
+      selectedColumn: Math.floor((gridWidth - 1) / 2), // Start with middle column selected
       isGameRunning: false,
     };
 
@@ -104,10 +104,6 @@ class TetrisGame {
         this.dropPiece(col);
       });
 
-      columnArea.addEventListener("mouseleave", () => {
-        this.setSelectedColumn(null);
-      });
-
       this.gridElement.appendChild(columnArea);
       this.columnAreas.push(columnArea);
     }
@@ -146,7 +142,7 @@ class TetrisGame {
     this.queueElements.push(thirdPieceCell);
   }
 
-  private setSelectedColumn(col: number | null): void {
+  private setSelectedColumn(col: number): void {
     this.gameState.selectedColumn = col;
 
     // Clear all indicators
@@ -155,7 +151,7 @@ class TetrisGame {
     });
 
     // Set active indicator for selected column
-    if (col !== null && this.columnAreas[col]) {
+    if (this.columnAreas[col]) {
       this.columnAreas[col].classList.add("active");
     }
   }
@@ -237,6 +233,8 @@ class TetrisGame {
   private startGame(): void {
     this.gameState.isGameRunning = true;
     this.updateNextQueueDisplay();
+    // Apply the initial column selection
+    this.setSelectedColumn(this.gameState.selectedColumn);
   }
 }
 
