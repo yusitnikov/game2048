@@ -15,43 +15,39 @@ const gridTop = 2 + cellGap + padding * 2;
 const fullWidth = gridWidth + (gridWidth - 1) * cellGap + padding * 2;
 const fullHeight = gridTop + gridHeight + (gridHeight - 1) * cellGap + padding;
 
+interface PieceHandler {
+  value: number;
+  element: HTMLElement;
+}
+
 interface GameState {
-  grid: (number | null)[][];
-  nextPieces: number[];
+  grid: (PieceHandler | undefined)[][];
+  nextPieces: PieceHandler[];
   selectedColumn: number;
   isGameRunning: boolean;
 }
 
 class TetrisGame {
-  private gameState: GameState;
-  private gridElement!: HTMLElement;
-  private queueElements: HTMLElement[] = [];
+  private readonly gameState: GameState;
+  private readonly gridElement: HTMLElement;
   private activeColumnIndicator!: HTMLElement;
 
   constructor() {
     this.gameState = {
       grid: Array(gridHeight)
-        .fill(null)
-        .map(() => Array(gridWidth).fill(null)),
+        .fill([])
+        .map(() => Array(gridWidth).fill(undefined)),
       nextPieces: [],
       selectedColumn: Math.floor((gridWidth - 1) / 2), // Start with middle column selected
-      isGameRunning: false,
+      isGameRunning: true,
     };
 
-    this.generateNextPieces();
-    this.initializeDOM();
-    this.startGame();
-    this.setupResizeListener();
-  }
-
-  private initializeDOM(): void {
     const app = document.querySelector<HTMLDivElement>("#app")!;
-
     app.innerHTML = `<div class="grid" id="grid"></div>`;
-
     this.gridElement = document.getElementById("grid")!;
 
     this.calculateCellSize();
+    this.setupResizeListener();
 
     this.createGrid();
   }
@@ -81,7 +77,7 @@ class TetrisGame {
     this.createActiveColumnIndicator();
 
     // Create queue elements in the grid
-    this.createQueueElements();
+    this.generateNextPieces();
   }
 
   private createColumnAreas(): void {
@@ -117,39 +113,8 @@ class TetrisGame {
       width: 1 + cellGap,
       height: (gridHeight + 1) * (1 + cellGap),
     });
+    this.updateActiveColumnIndicator();
     this.gridElement.appendChild(this.activeColumnIndicator);
-  }
-
-  private createQueueElements(): void {
-    this.queueElements = [];
-
-    // Create elements for the initial 3 pieces in the queue
-    for (let i = 0; i < 3; i++) {
-      const value = this.gameState.nextPieces[i];
-      const element = document.createElement("div");
-      element.className = getCellClasses(value);
-      element.textContent = formatCellLabel(value);
-
-      if (i === 0) {
-        // First element (next to drop) - will be positioned above selected column
-        // Position will be set by updateNextPiecePosition()
-      } else if (i === 1) {
-        // Second element
-        setCellSizeStyles(element, {
-          top: padding,
-          left: padding + 1 + cellGap,
-        });
-      } else if (i === 2) {
-        // Third element
-        setCellSizeStyles(element, {
-          top: padding,
-          left: padding,
-        });
-      }
-
-      this.gridElement.appendChild(element);
-      this.queueElements.push(element);
-    }
   }
 
   private setSelectedColumn(col: number): void {
@@ -170,105 +135,78 @@ class TetrisGame {
   }
 
   private updateNextPiecePosition(): void {
-    if (this.queueElements[0]) {
-      const col = this.gameState.selectedColumn;
-      setCellSizeStyles(this.queueElements[0], {
-        top: padding + 1 + padding,
-        left: padding + col * (1 + cellGap),
-      });
-    }
+    const { element } = this.gameState.nextPieces[2];
+
+    element.style.transitionDuration = "0.1s";
+    setCellSizeStyles(element, {
+      top: padding + 1 + padding,
+      left: padding + this.gameState.selectedColumn * (1 + cellGap),
+    });
   }
 
   private generateNextPieces(): void {
     while (this.gameState.nextPieces.length < 3) {
       const randomIndex = Math.floor(Math.random() * POWERS_OF_2.length);
       const newValue = POWERS_OF_2[randomIndex];
-      this.gameState.nextPieces.push(newValue);
-
-      // If we need a new queue element, create it (only if DOM is initialized)
-      if (this.gridElement && this.queueElements.length < 3) {
-        this.createNewQueueElement(newValue);
-      }
+      this.gameState.nextPieces.unshift({
+        value: newValue,
+        element: this.createNewQueueElement(newValue),
+      });
     }
-    // Only update display if DOM is ready
-    if (this.gridElement) {
-      this.updateNextQueueDisplay();
-    }
-  }
 
-  private shiftQueueElements(): void {
-    // Move remaining queue elements to their new positions
-    this.queueElements.forEach((element, index) => {
-      if (index === 0) {
-        // First element becomes the next piece - position above selected column
-        this.updateNextPiecePosition();
-      } else if (index === 1) {
-        // Second element moves to position 1,1
+    requestAnimationFrame(() => {
+      const queue = this.gameState.nextPieces.slice(0, 2);
+      for (const [index, { element }] of queue.entries()) {
         setCellSizeStyles(element, {
+          left: padding + index * (1 + cellGap),
           top: padding,
-          left: padding + 1 + cellGap,
-        });
-      } else if (index === 2) {
-        // Third element moves to position 0,0
-        setCellSizeStyles(element, {
-          top: padding,
-          left: padding,
         });
       }
+
+      this.updateNextPiecePosition();
     });
   }
 
-  private createNewQueueElement(value: number): void {
+  private createNewQueueElement(value: number) {
     const newElement = document.createElement("div");
     newElement.className = getCellClasses(value);
     newElement.textContent = formatCellLabel(value);
 
-    // Position the new element at the third position initially
+    // Position the new element outside the grid initially
     setCellSizeStyles(newElement, {
       top: padding,
-      left: padding,
+      left: -1,
     });
 
-    this.gridElement.appendChild(newElement);
-    this.queueElements.push(newElement);
-  }
+    newElement.style.transitionDuration = "0.5s";
 
-  private updateNextQueueDisplay(): void {
-    // Only update the display of existing queue elements, don't change their content
-    // The content is set when elements are created and should preserve their identity
+    this.gridElement.appendChild(newElement);
+    return newElement;
   }
 
   private dropPiece(col: number): void {
-    if (!this.canDropInColumn(col)) return;
-
-    const nextValue = this.gameState.nextPieces.shift()!;
-
     const targetRow = this.getLowestEmptyRow(col);
-    if (targetRow !== -1) {
-      this.gameState.grid[targetRow][col] = nextValue;
-
-      // Move the first queue element (next piece) to the grid position
-      const droppedElement = this.queueElements.shift()!;
-      setCellSizeStyles(droppedElement, {
-        top: gridTop + targetRow * (1 + cellGap),
-        left: padding + col * (1 + cellGap),
-      });
-
-      // Shift remaining queue elements to new positions
-      this.shiftQueueElements();
-
-      // Add new piece to queue and create new element for it
-      this.generateNextPieces();
+    if (targetRow < 0) {
+      return;
     }
-  }
 
-  private canDropInColumn(col: number): boolean {
-    return this.gameState.grid[0][col] === null;
+    const nextValue = this.gameState.nextPieces.pop()!;
+    this.gameState.grid[targetRow][col] = nextValue;
+
+    // Move the first queue element (next piece) to the grid position
+    nextValue.element.style.transitionDuration = "0.5s";
+    setCellSizeStyles(nextValue.element, {
+      top: gridTop + targetRow * (1 + cellGap),
+      left: padding + col * (1 + cellGap),
+    });
+
+    // Add new piece to queue and create new element for it
+    this.generateNextPieces();
   }
 
   private getLowestEmptyRow(col: number): number {
     for (let row = gridHeight - 1; row >= 0; row--) {
-      if (this.gameState.grid[row][col] === null) {
+      if (this.gameState.grid[row][col] === undefined) {
         return row;
       }
     }
@@ -292,13 +230,6 @@ class TetrisGame {
     window.addEventListener("resize", () => {
       this.calculateCellSize();
     });
-  }
-
-  private startGame(): void {
-    this.gameState.isGameRunning = true;
-    this.updateNextQueueDisplay();
-    // Apply the initial column selection
-    this.setSelectedColumn(this.gameState.selectedColumn);
   }
 }
 
