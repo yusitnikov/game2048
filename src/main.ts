@@ -112,17 +112,13 @@ class TetrisGame {
   private createQueueElements(): void {
     this.queueElements = [];
 
-    // Row 1: 1st in queue (next to drop)
+    // Row 1: 1st in queue (next to drop) - will be positioned above selected column
     const nextPieceCell = document.createElement("div");
     nextPieceCell.className = "cell";
-    setCellSizeStyles(nextPieceCell, {
-      top: padding + 1 + padding,
-      left: padding,
-    });
     this.gridElement.appendChild(nextPieceCell);
     this.queueElements.push(nextPieceCell);
 
-    // Row 0: 2nd and 3rd in queue
+    // Row 0: 2nd and 3rd in queue (fixed position)
     const secondPieceCell = document.createElement("div");
     secondPieceCell.className = "cell";
     setCellSizeStyles(secondPieceCell, {
@@ -153,6 +149,19 @@ class TetrisGame {
     // Set active indicator for selected column
     if (this.columnAreas[col]) {
       this.columnAreas[col].classList.add("active");
+    }
+
+    // Update next piece position to follow selected column
+    this.updateNextPiecePosition();
+  }
+
+  private updateNextPiecePosition(): void {
+    if (this.queueElements[0]) {
+      const col = this.gameState.selectedColumn;
+      setCellSizeStyles(this.queueElements[0], {
+        top: padding + 1 + padding,
+        left: padding + col * (1 + cellGap),
+      });
     }
   }
 
