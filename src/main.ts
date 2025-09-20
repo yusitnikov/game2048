@@ -16,12 +16,27 @@ const fullWidth = gridWidth + (gridWidth - 1) * cellGap + padding * 2;
 const fullHeight = gridTop + gridHeight + (gridHeight - 1) * cellGap + padding;
 
 const columnAnimationTime = 0.1;
-const dropAnimationTime = 0.5;
 const mergeAnimationTime = 0.3;
+
+const directions: Position[] = [
+  { col: -1, row: 0 },
+  { col: 0, row: 1 },
+  { col: 1, row: 0 },
+  { col: 0, row: -1 },
+];
 
 interface PieceHandler {
   value: number;
   element: HTMLElement;
+}
+
+interface Position {
+  row: number;
+  col: number;
+}
+
+interface PieceWithPosition extends Position {
+  piece: PieceHandler;
 }
 
 interface GameState {
@@ -225,89 +240,188 @@ class TetrisGame {
     const piece = this.gameState.nextPieces.pop()!;
     this.generateNextPieces();
 
-    this.gameState.grid[row][col] = piece;
+    let droppingPieces: PieceWithPosition[] = [{ row, col, piece }];
+    let activePieces = droppingPieces;
 
-    // Move the first queue element (next piece) to the grid position
-    piece.element.style.transitionDuration = `${dropAnimationTime}s`;
-    this.setPiecePosition(piece, row, col);
-    await this.sleep(dropAnimationTime);
+    for (let step = 0; activePieces.length; step++) {
+      if (droppingPieces.length) {
+        const animationTime = step === 0 ? 0.5 : 0.2;
 
-    const directions = [
-      { col: -1, row: 0 },
-      { col: 0, row: 1 },
-      { col: 1, row: 0 },
-    ];
-    for (let mergeRow = row, mergeCol = col, mergePiece = piece; ; ) {
-      const newPiecesToMerge = directions
-        .map(({ row, col }) => ({
-          row: mergeRow + row,
-          col: mergeCol + col,
-        }))
-        .map((cell) => ({
-          ...cell,
-          piece: this.gameState.grid[cell.row]?.[cell.col],
-        }))
-        .filter(({ piece }) => piece?.value === mergePiece.value)
-        .map((cell) => ({ ...cell, piece: cell.piece! }));
-      if (newPiecesToMerge.length === 0) {
-        break;
+        for (const item of droppingPieces) {
+          const { row, col, piece } = item;
+
+          piece.element.style.transitionDuration = `${animationTime}s`;
+          this.setPiecePosition(piece, item);
+          this.gameState.grid[row][col] = piece;
+        }
+
+        await this.sleep(animationTime);
       }
 
-      const piecesToMerge = [
-        { row: mergeRow, col: mergeCol, piece: mergePiece },
-        ...newPiecesToMerge,
-      ];
-      for (const { row, col } of piecesToMerge) {
-        this.gameState.grid[row][col] = undefined;
-      }
+      const mergedPieces = await this.mergePieces(activePieces);
 
-      const newCell = piecesToMerge
+      const newDroppingPieces = this.getPiecesToDrop();
+      activePieces = [...newDroppingPieces, ...mergedPieces];
+      droppingPieces = newDroppingPieces;
+    }
+  }
+
+  private getPieceMergeGroups(): PieceWithPosition[][] {
+    const mergeGroupsSet = new Set<(typeof mergeGroupsMap)[0][0]>();
+
+    const mergeGroupsMap = this.gameState.grid.map((rowArray, row) =>
+      rowArray.map((piece, col) => ({
+        pieces: piece ? [{ row, col, piece }] : [],
+        value: piece?.value,
+      })),
+    );
+
+    for (const row of mergeGroupsMap.keys()) {
+      for (const col of mergeGroupsMap[row].keys()) {
+        const group1 = mergeGroupsMap[row][col];
+        if (!group1.value) {
+          continue;
+        }
+
+        for (const direction of directions) {
+          const group2 =
+            mergeGroupsMap[row + direction.row]?.[col + direction.col];
+          if (group2 === group1 || group2?.value !== group1.value) {
+            continue;
+          }
+
+          group1.pieces = [...group1.pieces, ...group2.pieces];
+
+          for (const { row, col } of group2.pieces) {
+            mergeGroupsMap[row][col] = group1;
+          }
+
+          mergeGroupsSet.add(group1);
+          mergeGroupsSet.delete(group2);
+        }
+      }
+    }
+
+    return Array.from(mergeGroupsSet).map(({ pieces }) => pieces);
+  }
+
+  private async mergePieces(
+    activePieces: PieceWithPosition[],
+  ): Promise<PieceWithPosition[]> {
+    const pieceMergeGroups = this.getPieceMergeGroups().map((piecesToMerge) => {
+      // Start merging from one of the dropping pieces if exists, or a middle piece otherwise
+      const mergeCol = (
+        piecesToMerge.find((piece1) =>
+          activePieces.some(
+            (piece2) => piece2.row === piece1.row && piece2.col === piece1.col,
+          ),
+        ) ?? piecesToMerge[Math.floor(piecesToMerge.length / 2)]
+      ).col;
+      const mergeCell = piecesToMerge
         .filter(({ col }) => col === mergeCol)
         .sort((a, b) => b.row - a.row)[0];
-      mergeRow = newCell.row;
-      mergeCol = newCell.col;
 
-      const newValue = mergePiece.value * Math.pow(2, newPiecesToMerge.length);
-      const pieceClones = piecesToMerge.map(({ row, col }) => {
+      const newValue =
+        mergeCell.piece.value * Math.pow(2, piecesToMerge.length - 1);
+      const pieceClones = piecesToMerge.map((position) => {
         const piece = this.createNewPiece(
           newValue,
-          this.getPiecePosition(row, col),
+          this.getPiecePosition(position),
           mergeAnimationTime,
         );
         piece.element.style.opacity = "0";
         return piece;
       });
-      this.gameState.grid[mergeRow][mergeCol] = mergePiece = pieceClones[0];
-      await this.raf();
+
+      return {
+        piecesToMerge,
+        pieceClones,
+        mergedPiece: {
+          ...mergeCell,
+          piece: pieceClones[0],
+        },
+      };
+    });
+
+    if (pieceMergeGroups.length === 0) {
+      return [];
+    }
+
+    for (const { piecesToMerge, mergedPiece } of pieceMergeGroups) {
+      for (const { row, col } of piecesToMerge) {
+        this.gameState.grid[row][col] = undefined;
+      }
+
+      this.gameState.grid[mergedPiece.row][mergedPiece.col] = mergedPiece.piece;
+    }
+
+    await this.raf();
+
+    for (const {
+      piecesToMerge,
+      pieceClones,
+      mergedPiece,
+    } of pieceMergeGroups) {
       for (const { piece } of piecesToMerge) {
-        this.setPiecePosition(piece, mergeRow, mergeCol);
+        this.setPiecePosition(piece, mergedPiece);
         piece.element.style.opacity = "0";
       }
       for (const piece of pieceClones) {
-        this.setPiecePosition(piece, mergeRow, mergeCol);
+        this.setPiecePosition(piece, mergedPiece);
         piece.element.style.opacity = "1";
       }
-      await this.sleep(mergeAnimationTime);
+    }
+
+    await this.sleep(mergeAnimationTime);
+
+    for (const {
+      piecesToMerge,
+      pieceClones,
+      mergedPiece,
+    } of pieceMergeGroups) {
       for (const { piece } of piecesToMerge) {
         piece.element.remove();
       }
       for (const piece of pieceClones) {
-        if (piece !== mergePiece) {
+        if (piece !== mergedPiece.piece) {
           piece.element.remove();
         }
       }
     }
+
+    return pieceMergeGroups.map(({ mergedPiece }) => mergedPiece);
   }
 
-  private getPiecePosition(row: number, col: number) {
+  private getPiecesToDrop() {
+    const result: PieceWithPosition[] = [];
+
+    for (let col = 0; col < gridWidth; col++) {
+      let rowToDrop = this.getLowestEmptyRow(col);
+
+      for (let row = rowToDrop - 1; row >= 0; row--) {
+        const piece = this.gameState.grid[row][col];
+        if (!piece) {
+          continue;
+        }
+
+        this.gameState.grid[row][col] = undefined;
+        result.push({ row: rowToDrop, col, piece });
+        --rowToDrop;
+      }
+    }
+
+    return result;
+  }
+
+  private getPiecePosition({ row, col }: Position) {
     return {
       top: gridTop + row * (1 + cellGap),
       left: padding + col * (1 + cellGap),
     };
   }
 
-  private setPiecePosition(piece: PieceHandler, row: number, col: number) {
-    setCellSizeStyles(piece.element, this.getPiecePosition(row, col));
+  private setPiecePosition(piece: PieceHandler, position: Position) {
+    setCellSizeStyles(piece.element, this.getPiecePosition(position));
   }
 
   private getLowestEmptyRow(col: number): number {
