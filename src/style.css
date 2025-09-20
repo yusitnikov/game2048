@@ -36,6 +36,10 @@ body {
 
 .grid-background {
     background: #ffffff22;
+    transition: background linear 0.5s;
+}
+.grid-background.game-over {
+    background: #ff808033;
 }
 
 .cell.new-game-button {
@@ -76,6 +80,7 @@ body {
     height: var(--cell-size);
 }
 
+/* region Cell variations */
 /* Text length-based font sizing */
 .cell-len-1 {
     font-size: calc(var(--cell-size) * 0.6);
@@ -194,4 +199,4 @@ body {
     background-color: #d580ff;
     color: #ffffff;
 }
-
+/* endregion */

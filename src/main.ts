@@ -54,8 +54,11 @@ interface SerializableGameState {
 
 class TetrisGame {
   private readonly gridElement: HTMLElement;
+  private activeColumnElement!: HTMLElement;
+  private gridBackgroundElement!: HTMLElement;
+
   private gameState!: GameState;
-  private activeColumnIndicator!: HTMLElement;
+
   private animationsQueue = Promise.resolve();
 
   constructor() {
@@ -122,14 +125,18 @@ class TetrisGame {
   }
 
   private saveGame(): void {
-    const serializableState: SerializableGameState = {
-      grid: this.gameState.grid.map((row) =>
-        row.map((piece) => piece?.value ?? null),
-      ),
-      nextPieces: this.gameState.nextPieces.map((piece) => piece.value),
-    };
+    if (this.gameState.isGameRunning) {
+      const serializableState: SerializableGameState = {
+        grid: this.gameState.grid.map((row) =>
+          row.map((piece) => piece?.value ?? null),
+        ),
+        nextPieces: this.gameState.nextPieces.map((piece) => piece.value),
+      };
 
-    localStorage.setItem(saveKey, JSON.stringify(serializableState));
+      localStorage.setItem(saveKey, JSON.stringify(serializableState));
+    } else {
+      localStorage.removeItem(saveKey);
+    }
   }
 
   private reset() {
@@ -157,15 +164,15 @@ class TetrisGame {
   }
 
   private createGridBackground(): void {
-    const gridBg = document.createElement("div");
-    gridBg.className = "grid-background";
-    setCellSizeStyles(gridBg, {
+    this.gridBackgroundElement = document.createElement("div");
+    this.gridBackgroundElement.className = "grid-background";
+    setCellSizeStyles(this.gridBackgroundElement, {
       top: gridTop - cellGap / 2,
       left: padding - cellGap / 2,
       width: gridWidth * (1 + cellGap),
       height: gridHeight * (1 + cellGap),
     });
-    this.gridElement.appendChild(gridBg);
+    this.gridElement.appendChild(this.gridBackgroundElement);
   }
 
   private createNewGameButton() {
@@ -208,16 +215,16 @@ class TetrisGame {
   }
 
   private createActiveColumnIndicator(): void {
-    this.activeColumnIndicator = document.createElement("div");
-    this.activeColumnIndicator.className = "active-column-indicator";
-    setCellSizeStyles(this.activeColumnIndicator, {
+    this.activeColumnElement = document.createElement("div");
+    this.activeColumnElement.className = "active-column-indicator";
+    setCellSizeStyles(this.activeColumnElement, {
       top: gridTop - cellGap / 2 - 1 - cellGap,
       width: 1 + cellGap,
       height: (gridHeight + 1) * (1 + cellGap),
     });
-    this.activeColumnIndicator.style.transitionDuration = `${columnAnimationTime}s`;
+    this.activeColumnElement.style.transitionDuration = `${columnAnimationTime}s`;
     this.updateActiveColumnIndicator();
-    this.gridElement.appendChild(this.activeColumnIndicator);
+    this.gridElement.appendChild(this.activeColumnElement);
   }
 
   private setSelectedColumn(col: number): void {
@@ -232,7 +239,7 @@ class TetrisGame {
 
   private updateActiveColumnIndicator(): void {
     const col = this.gameState.selectedColumn;
-    setCellSizeStyles(this.activeColumnIndicator, {
+    setCellSizeStyles(this.activeColumnElement, {
       left: padding + col * (1 + cellGap) - cellGap / 2,
     });
   }
@@ -293,6 +300,10 @@ class TetrisGame {
   }
 
   private async dropPiece(col: number) {
+    if (!this.gameState.isGameRunning) {
+      return;
+    }
+
     const row = this.getLowestEmptyRow(col);
     if (row < 0) {
       return;
@@ -324,6 +335,12 @@ class TetrisGame {
       const newDroppingPieces = this.getPiecesToDrop();
       activePieces = [...newDroppingPieces, ...mergedPieces];
       droppingPieces = newDroppingPieces;
+    }
+
+    if (this.gameState.grid[0].some(Boolean)) {
+      this.gameState.isGameRunning = false;
+
+      this.gridBackgroundElement.classList.add("game-over");
     }
 
     this.saveGame();
