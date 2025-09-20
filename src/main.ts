@@ -28,11 +28,22 @@ interface GameState {
 }
 
 class TetrisGame {
-  private readonly gameState: GameState;
   private readonly gridElement: HTMLElement;
+  private gameState!: GameState;
   private activeColumnIndicator!: HTMLElement;
 
   constructor() {
+    const app = document.querySelector<HTMLDivElement>("#app")!;
+    app.innerHTML = `<div class="grid" id="grid"></div>`;
+    this.gridElement = document.getElementById("grid")!;
+
+    this.calculateCellSize();
+    this.setupResizeListener();
+
+    this.startNewGame();
+  }
+
+  private startNewGame(): void {
     this.gameState = {
       grid: Array(gridHeight)
         .fill([])
@@ -42,14 +53,13 @@ class TetrisGame {
       isGameRunning: true,
     };
 
-    const app = document.querySelector<HTMLDivElement>("#app")!;
-    app.innerHTML = `<div class="grid" id="grid"></div>`;
-    this.gridElement = document.getElementById("grid")!;
+    this.gridElement.innerHTML = "";
 
-    this.calculateCellSize();
-    this.setupResizeListener();
-
-    this.createGrid();
+    this.createGridBackground();
+    this.createNewGameButton();
+    this.createColumnAreas();
+    this.createActiveColumnIndicator();
+    this.generateNextPieces();
   }
 
   private createGridBackground(): void {
@@ -64,20 +74,16 @@ class TetrisGame {
     this.gridElement.appendChild(gridBg);
   }
 
-  private createGrid(): void {
-    this.gridElement.innerHTML = "";
-
-    // Create header background
-    this.createGridBackground();
-
-    // Create clickable column areas
-    this.createColumnAreas();
-
-    // Create active column indicator
-    this.createActiveColumnIndicator();
-
-    // Create queue elements in the grid
-    this.generateNextPieces();
+  private createNewGameButton() {
+    const button = document.createElement("button");
+    button.className = "new-game-button cell";
+    setCellSizeStyles(button, {
+      top: padding,
+      left: fullWidth - padding - 1,
+    });
+    button.innerText = "⟳";
+    button.addEventListener("click", () => this.startNewGame());
+    this.gridElement.appendChild(button);
   }
 
   private createColumnAreas(): void {

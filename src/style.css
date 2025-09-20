@@ -38,6 +38,16 @@ body {
     background: #ffffff22;
 }
 
+.cell.new-game-button {
+    border: none;
+    outline: none;
+    background: #fff;
+    pointer-events: initial;
+    cursor: pointer;
+    font-size: calc(var(--cell-size) * 0.8);
+    font-weight: normal;
+}
+
 .column-area {
     pointer-events: initial;
     cursor: pointer;
@@ -71,19 +81,19 @@ body {
 
 /* Text length-based font sizing */
 .cell-len-1 {
-    font-size: calc(var(--cell-size, 80px) * 0.6);
+    font-size: calc(var(--cell-size) * 0.6);
 }
 
 .cell-len-2 {
-    font-size: calc(var(--cell-size, 80px) * 0.5);
+    font-size: calc(var(--cell-size) * 0.5);
 }
 
 .cell-len-3 {
-    font-size: calc(var(--cell-size, 80px) * 0.4);
+    font-size: calc(var(--cell-size) * 0.4);
 }
 
 .cell-len-4 {
-    font-size: calc(var(--cell-size, 80px) * 0.3);
+    font-size: calc(var(--cell-size) * 0.3);
 }
 
 /* Tier 1 - Enhanced Rainbow with Better Distinction */
