@@ -4,7 +4,6 @@ import { POWERS_OF_2, formatCellLabel, getCellClasses } from "./gameHelpers";
 const GRID_WIDTH = 6;
 const GRID_HEIGHT = 7;
 
-
 interface GameState {
   grid: (number | null)[][];
   nextPieces: number[];
@@ -19,10 +18,12 @@ class TetrisGame {
 
   constructor() {
     this.gameState = {
-      grid: Array(GRID_HEIGHT).fill(null).map(() => Array(GRID_WIDTH).fill(null)),
+      grid: Array(GRID_HEIGHT)
+        .fill(null)
+        .map(() => Array(GRID_WIDTH).fill(null)),
       nextPieces: [],
       selectedColumn: null,
-      isGameRunning: false
+      isGameRunning: false,
     };
 
     this.calculateCellSize();
@@ -100,12 +101,15 @@ class TetrisGame {
   private setSelectedColumn(col: number | null): void {
     this.gameState.selectedColumn = col;
 
-    const allIndicators = this.gridElement.querySelectorAll(".column-indicator");
-    allIndicators.forEach(indicator => indicator.classList.remove("active"));
+    const allIndicators =
+      this.gridElement.querySelectorAll(".column-indicator");
+    allIndicators.forEach((indicator) => indicator.classList.remove("active"));
 
     if (col !== null) {
-      const columnCells = this.gridElement.querySelectorAll(`[data-col="${col}"]`);
-      columnCells.forEach(cell => {
+      const columnCells = this.gridElement.querySelectorAll(
+        `[data-col="${col}"]`,
+      );
+      columnCells.forEach((cell) => {
         const indicator = cell.querySelector(".column-indicator");
         if (indicator) {
           indicator.classList.add("active");
@@ -125,14 +129,13 @@ class TetrisGame {
   private updateNextQueueDisplay(): void {
     this.nextQueueElement.innerHTML = "";
 
-    this.gameState.nextPieces.forEach(value => {
+    this.gameState.nextPieces.forEach((value) => {
       const pieceElement = document.createElement("div");
       pieceElement.className = getCellClasses(value);
       pieceElement.textContent = formatCellLabel(value);
-      this.nextQueueElement.appendChild(pieceElement);
+      this.nextQueueElement.prepend(pieceElement);
     });
   }
-
 
   private dropPiece(col: number): void {
     if (!this.canDropInColumn(col)) return;
@@ -170,7 +173,7 @@ class TetrisGame {
       const value = this.gameState.grid[row][col];
 
       // Remove all piece classes
-      htmlCell.className = htmlCell.className.replace(/piece-\d+/g, '').trim();
+      htmlCell.className = htmlCell.className.replace(/piece-\d+/g, "").trim();
 
       if (value !== null) {
         htmlCell.textContent = formatCellLabel(value);
@@ -188,8 +191,10 @@ class TetrisGame {
     const gridPadding = 20; // grid internal padding
     const gridGap = 2 * (GRID_WIDTH - 1 + GRID_HEIGHT - 1); // gaps between cells
 
-    const availableWidth = window.innerWidth - sidebarWidth - padding - gridPadding - gridGap;
-    const availableHeight = window.innerHeight - padding - gridPadding - gridGap;
+    const availableWidth =
+      window.innerWidth - sidebarWidth - padding - gridPadding - gridGap;
+    const availableHeight =
+      window.innerHeight - padding - gridPadding - gridGap;
 
     // Calculate maximum cell size that fits both width and height constraints
     const maxCellSizeByWidth = Math.floor(availableWidth / GRID_WIDTH);
@@ -199,11 +204,14 @@ class TetrisGame {
     const cellSize = Math.min(maxCellSizeByWidth, maxCellSizeByHeight, 120); // max 120px
     const finalCellSize = Math.max(cellSize, 40); // min 40px
 
-    document.documentElement.style.setProperty('--cell-size', `${finalCellSize}px`);
+    document.documentElement.style.setProperty(
+      "--cell-size",
+      `${finalCellSize}px`,
+    );
   }
 
   private setupResizeListener(): void {
-    window.addEventListener('resize', () => {
+    window.addEventListener("resize", () => {
       this.calculateCellSize();
     });
   }

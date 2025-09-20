@@ -1,7 +1,7 @@
 // Shared helper functions for the 2048 game
 
-// Generate all powers of 2 up to the 30th power
-export const POWERS_OF_2 = Array(30)
+// Generate all powers of 2 up to 1M (2^20)
+export const POWERS_OF_2 = Array(20)
   .fill(0)
   .map((_, i) => Math.pow(2, i + 1));
 
