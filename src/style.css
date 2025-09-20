@@ -116,63 +116,185 @@ body {
   opacity: 1;
 }
 
-/* Power of 2 piece styles */
+/* Text length-based font sizing */
+.cell-len-1 {
+  font-size: calc(var(--cell-size, 80px) * 0.6);
+}
+
+.cell-len-2 {
+  font-size: calc(var(--cell-size, 80px) * 0.5);
+}
+
+.cell-len-3 {
+  font-size: calc(var(--cell-size, 80px) * 0.4);
+}
+
+.cell-len-4 {
+  font-size: calc(var(--cell-size, 80px) * 0.3);
+}
+
+/* Power of 2 piece colors based on labels */
 .cell-2 {
   background-color: #eee4da;
   color: #776e65;
-  font-size: calc(var(--cell-size, 80px) * 0.5);
 }
 
 .cell-4 {
   background-color: #ede0c8;
   color: #776e65;
-  font-size: calc(var(--cell-size, 80px) * 0.5);
 }
 
 .cell-8 {
   background-color: #f2b179;
   color: #f9f6f2;
-  font-size: calc(var(--cell-size, 80px) * 0.5);
 }
 
 .cell-16 {
   background-color: #f59563;
   color: #f9f6f2;
-  font-size: calc(var(--cell-size, 80px) * 0.45);
 }
 
 .cell-32 {
   background-color: #f67c5f;
   color: #f9f6f2;
-  font-size: calc(var(--cell-size, 80px) * 0.45);
 }
 
 .cell-64 {
   background-color: #f65e3b;
   color: #f9f6f2;
-  font-size: calc(var(--cell-size, 80px) * 0.45);
 }
 
 .cell-128 {
   background-color: #edcf72;
   color: #f9f6f2;
-  font-size: calc(var(--cell-size, 80px) * 0.4);
 }
 
 .cell-256 {
   background-color: #edcc61;
   color: #f9f6f2;
-  font-size: calc(var(--cell-size, 80px) * 0.4);
 }
 
 .cell-512 {
   background-color: #edc850;
   color: #f9f6f2;
-  font-size: calc(var(--cell-size, 80px) * 0.4);
 }
 
 .cell-1024 {
   background-color: #edc53f;
   color: #f9f6f2;
-  font-size: calc(var(--cell-size, 80px) * 0.35);
+}
+
+.cell-2048 {
+  background-color: #edc22e;
+  color: #f9f6f2;
+}
+
+.cell-4096 {
+  background-color: #edc22e;
+  color: #f9f6f2;
+}
+
+.cell-1K {
+  background-color: #3c3a32;
+  color: #f9f6f2;
+}
+
+.cell-2K {
+  background-color: #3c3a32;
+  color: #f9f6f2;
+}
+
+.cell-4K {
+  background-color: #3c3a32;
+  color: #f9f6f2;
+}
+
+.cell-8K {
+  background-color: #3c3a32;
+  color: #f9f6f2;
+}
+
+.cell-16K {
+  background-color: #3c3a32;
+  color: #f9f6f2;
+}
+
+.cell-32K {
+  background-color: #3c3a32;
+  color: #f9f6f2;
+}
+
+.cell-64K {
+  background-color: #3c3a32;
+  color: #f9f6f2;
+}
+
+.cell-128K {
+  background-color: #3c3a32;
+  color: #f9f6f2;
+}
+
+.cell-256K {
+  background-color: #3c3a32;
+  color: #f9f6f2;
+}
+
+.cell-512K {
+  background-color: #3c3a32;
+  color: #f9f6f2;
+}
+
+.cell-1M {
+  background-color: #3c3a32;
+  color: #f9f6f2;
+}
+
+.cell-2M {
+  background-color: #3c3a32;
+  color: #f9f6f2;
+}
+
+.cell-4M {
+  background-color: #3c3a32;
+  color: #f9f6f2;
+}
+
+.cell-8M {
+  background-color: #3c3a32;
+  color: #f9f6f2;
+}
+
+.cell-16M {
+  background-color: #3c3a32;
+  color: #f9f6f2;
+}
+
+.cell-32M {
+  background-color: #3c3a32;
+  color: #f9f6f2;
+}
+
+.cell-64M {
+  background-color: #3c3a32;
+  color: #f9f6f2;
+}
+
+.cell-128M {
+  background-color: #3c3a32;
+  color: #f9f6f2;
+}
+
+.cell-256M {
+  background-color: #3c3a32;
+  color: #f9f6f2;
+}
+
+.cell-512M {
+  background-color: #3c3a32;
+  color: #f9f6f2;
+}
+
+.cell-1B {
+  background-color: #3c3a32;
+  color: #f9f6f2;
 }

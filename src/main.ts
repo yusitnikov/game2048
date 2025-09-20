@@ -1,8 +1,8 @@
 import "./style.css";
+import { POWERS_OF_2, formatCellLabel, getCellClasses } from "./gameHelpers";
 
 const GRID_WIDTH = 6;
 const GRID_HEIGHT = 7;
-const POWERS_OF_2 = [2, 4, 8, 16, 32, 64, 128, 256, 512, 1024];
 
 
 interface GameState {
@@ -127,8 +127,8 @@ class TetrisGame {
 
     this.gameState.nextPieces.forEach(value => {
       const pieceElement = document.createElement("div");
-      pieceElement.className = `cell cell-${value}`;
-      pieceElement.textContent = value.toString();
+      pieceElement.className = getCellClasses(value);
+      pieceElement.textContent = formatCellLabel(value);
       this.nextQueueElement.appendChild(pieceElement);
     });
   }
@@ -173,17 +173,11 @@ class TetrisGame {
       htmlCell.className = htmlCell.className.replace(/piece-\d+/g, '').trim();
 
       if (value !== null) {
-        htmlCell.textContent = value.toString();
-        htmlCell.classList.add("occupied", `cell-${value}`);
+        htmlCell.textContent = formatCellLabel(value);
+        htmlCell.className = `${getCellClasses(value)} occupied`;
       } else {
         htmlCell.textContent = "";
-        htmlCell.classList.remove("occupied");
-        // Remove piece-specific classes
-        htmlCell.className = htmlCell.className.replace(/cell-\d+/g, '').trim();
-        // Ensure base cell class remains
-        if (!htmlCell.classList.contains("cell")) {
-          htmlCell.classList.add("cell");
-        }
+        htmlCell.className = "cell";
       }
     });
   }
