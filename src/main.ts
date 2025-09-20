@@ -1,8 +1,8 @@
 import "./style.css";
 import {
-  POWERS_OF_2,
   formatCellLabel,
   getCellClasses,
+  POWERS_OF_2,
   setCellSizeStyles,
 } from "./gameHelpers";
 
@@ -51,6 +51,12 @@ class TetrisGame {
 
   private sleep(seconds: number) {
     return new Promise<void>((resolve) => setTimeout(resolve, seconds * 1000));
+  }
+
+  private raf() {
+    return new Promise<void>((resolve) =>
+      requestAnimationFrame(() => resolve()),
+    );
   }
 
   private startNewGame(): void {
@@ -166,10 +172,7 @@ class TetrisGame {
     while (this.gameState.nextPieces.length < 3) {
       const randomIndex = Math.floor(Math.random() * POWERS_OF_2.length);
       const newValue = POWERS_OF_2[randomIndex];
-      this.gameState.nextPieces.unshift({
-        value: newValue,
-        element: this.createNewQueueElement(newValue),
-      });
+      this.gameState.nextPieces.unshift(this.createNewQueueElement(newValue));
     }
 
     requestAnimationFrame(() => {
@@ -185,21 +188,27 @@ class TetrisGame {
     });
   }
 
+  private createNewPiece(
+    value: number,
+    position: { top: number; left: number },
+    transitionDuration = 0.5,
+  ): PieceHandler {
+    const element = document.createElement("div");
+    element.className = getCellClasses(value);
+    element.textContent = formatCellLabel(value);
+
+    setCellSizeStyles(element, position);
+
+    element.style.transitionDuration = `${transitionDuration}s`;
+
+    this.gridElement.appendChild(element);
+
+    return { value, element };
+  }
+
   private createNewQueueElement(value: number) {
-    const newElement = document.createElement("div");
-    newElement.className = getCellClasses(value);
-    newElement.textContent = formatCellLabel(value);
-
     // Position the new element outside the grid initially
-    setCellSizeStyles(newElement, {
-      top: padding,
-      left: -1,
-    });
-
-    newElement.style.transitionDuration = "0.5s";
-
-    this.gridElement.appendChild(newElement);
-    return newElement;
+    return this.createNewPiece(value, { top: padding, left: -1 });
   }
 
   private async dropPiece(col: number) {
@@ -219,13 +228,83 @@ class TetrisGame {
     piece.element.style.transitionDuration = `${animationTime}s`;
     this.setPiecePosition(piece, row, col);
     await this.sleep(animationTime);
+
+    const directions = [
+      { col: -1, row: 0 },
+      { col: 0, row: 1 },
+      { col: 1, row: 0 },
+    ];
+    for (let mergeRow = row, mergeCol = col, mergePiece = piece; ; ) {
+      const newPiecesToMerge = directions
+        .map(({ row, col }) => ({
+          row: mergeRow + row,
+          col: mergeCol + col,
+        }))
+        .map((cell) => ({
+          ...cell,
+          piece: this.gameState.grid[cell.row]?.[cell.col],
+        }))
+        .filter(({ piece }) => piece?.value === mergePiece.value)
+        .map((cell) => ({ ...cell, piece: cell.piece! }));
+      if (newPiecesToMerge.length === 0) {
+        break;
+      }
+
+      const piecesToMerge = [
+        { row: mergeRow, col: mergeCol, piece: mergePiece },
+        ...newPiecesToMerge,
+      ];
+      for (const { row, col } of piecesToMerge) {
+        this.gameState.grid[row][col] = undefined;
+      }
+
+      const newCell = piecesToMerge
+        .filter(({ col }) => col === mergeCol)
+        .sort((a, b) => b.row - a.row)[0];
+      mergeRow = newCell.row;
+      mergeCol = newCell.col;
+
+      const newValue = mergePiece.value * Math.pow(2, newPiecesToMerge.length);
+      const pieceClones = piecesToMerge.map(({ row, col }) => {
+        const piece = this.createNewPiece(
+          newValue,
+          this.getPiecePosition(row, col),
+          animationTime,
+        );
+        piece.element.style.opacity = "0";
+        return piece;
+      });
+      this.gameState.grid[mergeRow][mergeCol] = mergePiece = pieceClones[0];
+      await this.raf();
+      for (const { piece } of piecesToMerge) {
+        this.setPiecePosition(piece, mergeRow, mergeCol);
+        piece.element.style.opacity = "0";
+      }
+      for (const piece of pieceClones) {
+        this.setPiecePosition(piece, mergeRow, mergeCol);
+        piece.element.style.opacity = "1";
+      }
+      await this.sleep(animationTime);
+      for (const { piece } of piecesToMerge) {
+        piece.element.remove();
+      }
+      for (const [index, piece] of pieceClones.entries()) {
+        if (index !== 0) {
+          piece.element.remove();
+        }
+      }
+    }
+  }
+
+  private getPiecePosition(row: number, col: number) {
+    return {
+      top: gridTop + row * (1 + cellGap),
+      left: padding + col * (1 + cellGap),
+    };
   }
 
   private setPiecePosition(piece: PieceHandler, row: number, col: number) {
-    setCellSizeStyles(piece.element, {
-      top: gridTop + row * (1 + cellGap),
-      left: padding + col * (1 + cellGap),
-    });
+    setCellSizeStyles(piece.element, this.getPiecePosition(row, col));
     this.gameState.grid[row][col] = piece;
   }
 

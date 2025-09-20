@@ -62,7 +62,7 @@ body {
 }
 
 .active-column-indicator, .cell {
-    transition: all ease-out 0.1s;
+    transition: all linear 0.1s;
 }
 
 .cell {
