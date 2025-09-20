@@ -1,8 +1,19 @@
 import "./style.css";
-import { POWERS_OF_2, formatCellLabel, getCellClasses } from "./gameHelpers";
+import {
+  POWERS_OF_2,
+  formatCellLabel,
+  getCellClasses,
+  setCellSizeStyles,
+} from "./gameHelpers";
 
-const GRID_WIDTH = 6;
-const GRID_HEIGHT = 7;
+const gridWidth = 6;
+const gridHeight = 7;
+
+const padding = 0.3;
+const cellGap = 0.1;
+const gridTop = 2 + cellGap + padding * 2;
+const fullWidth = gridWidth + (gridWidth - 1) * cellGap + padding * 2;
+const fullHeight = gridTop + gridHeight + (gridWidth - 1) * cellGap + padding;
 
 interface GameState {
   grid: (number | null)[][];
@@ -14,19 +25,18 @@ interface GameState {
 class TetrisGame {
   private gameState: GameState;
   private gridElement!: HTMLElement;
-  private nextQueueElement!: HTMLElement;
+  private queueElements: HTMLElement[] = [];
 
   constructor() {
     this.gameState = {
-      grid: Array(GRID_HEIGHT)
+      grid: Array(gridHeight)
         .fill(null)
-        .map(() => Array(GRID_WIDTH).fill(null)),
+        .map(() => Array(gridWidth).fill(null)),
       nextPieces: [],
       selectedColumn: null,
       isGameRunning: false,
     };
 
-    this.calculateCellSize();
     this.initializeDOM();
     this.generateNextPieces();
     this.startGame();
@@ -36,22 +46,11 @@ class TetrisGame {
   private initializeDOM(): void {
     const app = document.querySelector<HTMLDivElement>("#app")!;
 
-    app.innerHTML = `
-      <div class="game-container">
-        <div class="game-board">
-          <div class="grid" id="grid"></div>
-        </div>
-        <div class="sidebar">
-          <div class="next-queue">
-            <h3>Next Pieces</h3>
-            <div id="next-queue"></div>
-          </div>
-        </div>
-      </div>
-    `;
+    app.innerHTML = `<div class="grid" id="grid"></div>`;
 
     this.gridElement = document.getElementById("grid")!;
-    this.nextQueueElement = document.getElementById("next-queue")!;
+
+    this.calculateCellSize();
 
     this.createGrid();
     this.setupEventListeners();
@@ -60,12 +59,17 @@ class TetrisGame {
   private createGrid(): void {
     this.gridElement.innerHTML = "";
 
-    for (let row = 0; row < GRID_HEIGHT; row++) {
-      for (let col = 0; col < GRID_WIDTH; col++) {
+    // Create main game grid cells
+    for (let row = 0; row < gridHeight; row++) {
+      for (let col = 0; col < gridWidth; col++) {
         const cell = document.createElement("div");
         cell.className = "cell";
         cell.dataset.row = row.toString();
         cell.dataset.col = col.toString();
+        setCellSizeStyles(cell, {
+          top: gridTop + row * (1 + cellGap),
+          left: padding + col * (1 + cellGap),
+        });
 
         const indicator = document.createElement("div");
         indicator.className = "column-indicator";
@@ -74,6 +78,42 @@ class TetrisGame {
         this.gridElement.appendChild(cell);
       }
     }
+
+    // Create queue elements in the grid
+    this.createQueueElements();
+  }
+
+  private createQueueElements(): void {
+    this.queueElements = [];
+
+    // Row 1: 1st in queue (next to drop)
+    const nextPieceCell = document.createElement("div");
+    nextPieceCell.className = "cell";
+    setCellSizeStyles(nextPieceCell, {
+      top: padding + 1 + cellGap,
+      left: padding,
+    });
+    this.gridElement.appendChild(nextPieceCell);
+    this.queueElements.push(nextPieceCell);
+
+    // Row 0: 2nd and 3rd in queue
+    const secondPieceCell = document.createElement("div");
+    secondPieceCell.className = "cell";
+    setCellSizeStyles(secondPieceCell, {
+      top: padding,
+      left: padding + 1 + cellGap,
+    });
+    this.gridElement.appendChild(secondPieceCell);
+    this.queueElements.push(secondPieceCell);
+
+    const thirdPieceCell = document.createElement("div");
+    thirdPieceCell.className = "cell";
+    setCellSizeStyles(thirdPieceCell, {
+      top: padding,
+      left: padding,
+    });
+    this.gridElement.appendChild(thirdPieceCell);
+    this.queueElements.push(thirdPieceCell);
   }
 
   private setupEventListeners(): void {
@@ -127,13 +167,12 @@ class TetrisGame {
   }
 
   private updateNextQueueDisplay(): void {
-    this.nextQueueElement.innerHTML = "";
-
-    this.gameState.nextPieces.forEach((value) => {
-      const pieceElement = document.createElement("div");
-      pieceElement.className = getCellClasses(value);
-      pieceElement.textContent = formatCellLabel(value);
-      this.nextQueueElement.prepend(pieceElement);
+    this.gameState.nextPieces.forEach((value, index) => {
+      if (index < this.queueElements.length) {
+        const queueElement = this.queueElements[index];
+        queueElement.className = getCellClasses(value);
+        queueElement.textContent = formatCellLabel(value);
+      }
     });
   }
 
@@ -155,7 +194,7 @@ class TetrisGame {
   }
 
   private getLowestEmptyRow(col: number): number {
-    for (let row = GRID_HEIGHT - 1; row >= 0; row--) {
+    for (let row = gridHeight - 1; row >= 0; row--) {
       if (this.gameState.grid[row][col] === null) {
         return row;
       }
@@ -168,8 +207,8 @@ class TetrisGame {
 
     cells.forEach((cell, index) => {
       const htmlCell = cell as HTMLElement;
-      const row = Math.floor(index / GRID_WIDTH);
-      const col = index % GRID_WIDTH;
+      const row = Math.floor(index / gridWidth);
+      const col = index % gridWidth;
       const value = this.gameState.grid[row][col];
 
       // Remove all piece classes
@@ -186,28 +225,16 @@ class TetrisGame {
   }
 
   private calculateCellSize(): void {
-    const sidebarWidth = 220; // sidebar width + padding
-    const padding = 40; // container padding
-    const gridPadding = 20; // grid internal padding
-    const gridGap = 2 * (GRID_WIDTH - 1 + GRID_HEIGHT - 1); // gaps between cells
-
-    const availableWidth =
-      window.innerWidth - sidebarWidth - padding - gridPadding - gridGap;
-    const availableHeight =
-      window.innerHeight - padding - gridPadding - gridGap;
-
     // Calculate maximum cell size that fits both width and height constraints
-    const maxCellSizeByWidth = Math.floor(availableWidth / GRID_WIDTH);
-    const maxCellSizeByHeight = Math.floor(availableHeight / GRID_HEIGHT);
+    const maxCellSizeByWidth = Math.floor(window.innerWidth / fullWidth);
+    const maxCellSizeByHeight = Math.floor(window.innerHeight / fullHeight);
 
     // Use the smaller of the two to ensure the grid fits
-    const cellSize = Math.min(maxCellSizeByWidth, maxCellSizeByHeight, 120); // max 120px
-    const finalCellSize = Math.max(cellSize, 40); // min 40px
+    const cellSize = Math.min(maxCellSizeByWidth, maxCellSizeByHeight); // max 120px
 
-    document.documentElement.style.setProperty(
-      "--cell-size",
-      `${finalCellSize}px`,
-    );
+    document.documentElement.style.setProperty("--cell-size", `${cellSize}px`);
+    this.gridElement.style.width = `${cellSize * fullWidth}px`;
+    this.gridElement.style.height = `${cellSize * fullHeight}px`;
   }
 
   private setupResizeListener(): void {

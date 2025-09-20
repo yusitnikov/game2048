@@ -28,3 +28,25 @@ export function getCellClasses(value: number): string {
   const labelClass = `cell-${label}`;
   return `cell ${lengthClass} ${labelClass}`;
 }
+
+export const getCellSizeProp = (size: number) =>
+  `calc(var(--cell-size) * ${size})`;
+
+export const setCellSizeStyles = (
+  element: HTMLElement,
+  styles: Partial<Record<StringCssProps, number>>,
+) => {
+  for (const [key, value] of Object.entries(styles)) {
+    if (value === undefined) {
+      delete element.style[key as StringCssProps];
+    } else {
+      element.style[key as StringCssProps] = getCellSizeProp(value);
+    }
+  }
+};
+
+type FilterKeysOfType<ObjectT, BaseT> = {
+  [K in keyof ObjectT]: ObjectT[K] extends BaseT ? K : never;
+}[keyof ObjectT];
+
+type StringCssProps = FilterKeysOfType<CSSStyleDeclaration, string>;
