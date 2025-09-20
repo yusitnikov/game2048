@@ -13,7 +13,7 @@ const padding = 0.3;
 const cellGap = 0.1;
 const gridTop = 2 + cellGap + padding * 2;
 const fullWidth = gridWidth + (gridWidth - 1) * cellGap + padding * 2;
-const fullHeight = gridTop + gridHeight + (gridWidth - 1) * cellGap + padding;
+const fullHeight = gridTop + gridHeight + (gridHeight - 1) * cellGap + padding;
 
 interface GameState {
   grid: (number | null)[][];
@@ -26,6 +26,7 @@ class TetrisGame {
   private gameState: GameState;
   private gridElement!: HTMLElement;
   private queueElements: HTMLElement[] = [];
+  private columnAreas: HTMLElement[] = [];
 
   constructor() {
     this.gameState = {
@@ -53,34 +54,63 @@ class TetrisGame {
     this.calculateCellSize();
 
     this.createGrid();
-    this.setupEventListeners();
+  }
+
+  private createGridBackground(): void {
+    const gridBg = document.createElement("div");
+    gridBg.className = "grid-background";
+    setCellSizeStyles(gridBg, {
+      top: gridTop - cellGap / 2,
+      left: padding - cellGap / 2,
+      width: gridWidth * (1 + cellGap),
+      height: gridHeight * (1 + cellGap),
+    });
+    this.gridElement.appendChild(gridBg);
   }
 
   private createGrid(): void {
     this.gridElement.innerHTML = "";
 
-    // Create main game grid cells
-    for (let row = 0; row < gridHeight; row++) {
-      for (let col = 0; col < gridWidth; col++) {
-        const cell = document.createElement("div");
-        cell.className = "cell";
-        cell.dataset.row = row.toString();
-        cell.dataset.col = col.toString();
-        setCellSizeStyles(cell, {
-          top: gridTop + row * (1 + cellGap),
-          left: padding + col * (1 + cellGap),
-        });
+    // Create header background
+    this.createGridBackground();
 
-        const indicator = document.createElement("div");
-        indicator.className = "column-indicator";
-        cell.appendChild(indicator);
-
-        this.gridElement.appendChild(cell);
-      }
-    }
+    // Create clickable column areas
+    this.createColumnAreas();
 
     // Create queue elements in the grid
     this.createQueueElements();
+  }
+
+  private createColumnAreas(): void {
+    this.columnAreas = [];
+
+    for (let col = 0; col < gridWidth; col++) {
+      const columnArea = document.createElement("div");
+      columnArea.className = "column-area";
+      columnArea.dataset.col = col.toString();
+      setCellSizeStyles(columnArea, {
+        left: padding + col * (1 + cellGap) - cellGap / 2,
+        top: gridTop - cellGap / 2 - 1 - cellGap,
+        width: 1 + cellGap,
+        height: (gridHeight + 1) * (1 + cellGap),
+      });
+
+      // Add event listeners directly to the column
+      columnArea.addEventListener("mouseenter", () => {
+        this.setSelectedColumn(col);
+      });
+
+      columnArea.addEventListener("click", () => {
+        this.dropPiece(col);
+      });
+
+      columnArea.addEventListener("mouseleave", () => {
+        this.setSelectedColumn(null);
+      });
+
+      this.gridElement.appendChild(columnArea);
+      this.columnAreas.push(columnArea);
+    }
   }
 
   private createQueueElements(): void {
@@ -90,7 +120,7 @@ class TetrisGame {
     const nextPieceCell = document.createElement("div");
     nextPieceCell.className = "cell";
     setCellSizeStyles(nextPieceCell, {
-      top: padding + 1 + cellGap,
+      top: padding + 1 + padding,
       left: padding,
     });
     this.gridElement.appendChild(nextPieceCell);
@@ -116,45 +146,17 @@ class TetrisGame {
     this.queueElements.push(thirdPieceCell);
   }
 
-  private setupEventListeners(): void {
-    this.gridElement.addEventListener("mouseover", (e) => {
-      const target = e.target as HTMLElement;
-      if (target.classList.contains("cell")) {
-        const col = parseInt(target.dataset.col!);
-        this.setSelectedColumn(col);
-      }
-    });
-
-    this.gridElement.addEventListener("click", (e) => {
-      const target = e.target as HTMLElement;
-      if (target.classList.contains("cell")) {
-        const col = parseInt(target.dataset.col!);
-        this.dropPiece(col);
-      }
-    });
-
-    this.gridElement.addEventListener("mouseleave", () => {
-      this.setSelectedColumn(null);
-    });
-  }
-
   private setSelectedColumn(col: number | null): void {
     this.gameState.selectedColumn = col;
 
-    const allIndicators =
-      this.gridElement.querySelectorAll(".column-indicator");
-    allIndicators.forEach((indicator) => indicator.classList.remove("active"));
+    // Clear all indicators
+    this.columnAreas.forEach((columnArea) => {
+      columnArea.classList.remove("active");
+    });
 
-    if (col !== null) {
-      const columnCells = this.gridElement.querySelectorAll(
-        `[data-col="${col}"]`,
-      );
-      columnCells.forEach((cell) => {
-        const indicator = cell.querySelector(".column-indicator");
-        if (indicator) {
-          indicator.classList.add("active");
-        }
-      });
+    // Set active indicator for selected column
+    if (col !== null && this.columnAreas[col]) {
+      this.columnAreas[col].classList.add("active");
     }
   }
 
@@ -185,7 +187,7 @@ class TetrisGame {
     const targetRow = this.getLowestEmptyRow(col);
     if (targetRow !== -1) {
       this.gameState.grid[targetRow][col] = nextValue;
-      this.updateGridDisplay();
+      this.createGameCell(targetRow, col, nextValue);
     }
   }
 
@@ -202,35 +204,24 @@ class TetrisGame {
     return -1;
   }
 
-  private updateGridDisplay(): void {
-    const cells = this.gridElement.querySelectorAll(".cell");
-
-    cells.forEach((cell, index) => {
-      const htmlCell = cell as HTMLElement;
-      const row = Math.floor(index / gridWidth);
-      const col = index % gridWidth;
-      const value = this.gameState.grid[row][col];
-
-      // Remove all piece classes
-      htmlCell.className = htmlCell.className.replace(/piece-\d+/g, "").trim();
-
-      if (value !== null) {
-        htmlCell.textContent = formatCellLabel(value);
-        htmlCell.className = `${getCellClasses(value)} occupied`;
-      } else {
-        htmlCell.textContent = "";
-        htmlCell.className = "cell";
-      }
+  private createGameCell(row: number, col: number, value: number): void {
+    const cell = document.createElement("div");
+    cell.className = getCellClasses(value);
+    cell.textContent = formatCellLabel(value);
+    setCellSizeStyles(cell, {
+      top: gridTop + row * (1 + cellGap),
+      left: padding + col * (1 + cellGap),
     });
+    this.gridElement.appendChild(cell);
   }
 
   private calculateCellSize(): void {
     // Calculate maximum cell size that fits both width and height constraints
-    const maxCellSizeByWidth = Math.floor(window.innerWidth / fullWidth);
-    const maxCellSizeByHeight = Math.floor(window.innerHeight / fullHeight);
+    const maxCellSizeByWidth = window.innerWidth / fullWidth;
+    const maxCellSizeByHeight = window.innerHeight / fullHeight;
 
     // Use the smaller of the two to ensure the grid fits
-    const cellSize = Math.min(maxCellSizeByWidth, maxCellSizeByHeight); // max 120px
+    const cellSize = Math.min(maxCellSizeByWidth, maxCellSizeByHeight);
 
     document.documentElement.style.setProperty("--cell-size", `${cellSize}px`);
     this.gridElement.style.width = `${cellSize * fullWidth}px`;
@@ -245,7 +236,6 @@ class TetrisGame {
 
   private startGame(): void {
     this.gameState.isGameRunning = true;
-    this.updateGridDisplay();
     this.updateNextQueueDisplay();
   }
 }
