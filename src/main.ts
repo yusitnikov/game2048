@@ -1,4 +1,4 @@
 import "./style.css";
 
 const app = document.querySelector<HTMLDivElement>("#app")!;
-app.innerHTML = `It works!`;
+app.innerHTML = "It works!";

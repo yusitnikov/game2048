@@ -7,8 +7,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Start development server**: `npm run dev` - Runs Vite dev server with hot reload
 - **Build for production**: `npm run build` - Compiles TypeScript and builds with Vite
 - **Preview production build**: `npm run preview` - Serves the built application locally
-- **Type checking**: `npx tsc --noEmit` - Run TypeScript compiler for type checking only
-- **Linting**: `npx eslint src/` - Run ESLint on source files
+- **Type checking**: `npm run typecheck` - Run TypeScript compiler for type checking only
+- **Linting**: `npm run lint` - Run ESLint on source files
 - **Format code**: `npx prettier --write src/` - Format code with Prettier
 
 ## Project Architecture
