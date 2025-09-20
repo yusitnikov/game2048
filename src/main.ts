@@ -17,6 +17,7 @@ const fullHeight = gridTop + gridHeight + (gridHeight - 1) * cellGap + padding;
 
 const columnAnimationTime = 0.1;
 const mergeAnimationTime = 0.3;
+const saveKey = "game2048-save";
 
 const directions: Position[] = [
   { col: -1, row: 0 },
@@ -46,6 +47,11 @@ interface GameState {
   isGameRunning: boolean;
 }
 
+interface SerializableGameState {
+  grid: (number | null)[][];
+  nextPieces: number[];
+}
+
 class TetrisGame {
   private readonly gridElement: HTMLElement;
   private gameState!: GameState;
@@ -60,7 +66,9 @@ class TetrisGame {
     this.calculateCellSize();
     this.setupResizeListener();
 
-    this.startNewGame();
+    if (!this.loadGame()) {
+      this.startNewGame();
+    }
   }
 
   private animate(callback: () => Promise<void> | void) {
@@ -78,7 +86,53 @@ class TetrisGame {
     );
   }
 
-  private startNewGame(): void {
+  private loadGame() {
+    const savedStateStr = localStorage.getItem(saveKey);
+    if (!savedStateStr) {
+      return false;
+    }
+
+    try {
+      const savedState = JSON.parse(savedStateStr) as SerializableGameState;
+
+      this.reset();
+
+      for (const [row, rowArray] of savedState.grid.entries()) {
+        for (const [col, value] of rowArray.entries()) {
+          if (value) {
+            this.gameState.grid[row][col] = this.createNewPiece(
+              value,
+              this.getPiecePosition({ row, col }),
+              0,
+            );
+          }
+        }
+      }
+
+      this.gameState.nextPieces = savedState.nextPieces.map((value) =>
+        this.createNewQueueElement(value),
+      );
+      this.updateNextPiecePositions();
+
+      return true;
+    } catch (error) {
+      console.log("Failed to load game:", error);
+      return false;
+    }
+  }
+
+  private saveGame(): void {
+    const serializableState: SerializableGameState = {
+      grid: this.gameState.grid.map((row) =>
+        row.map((piece) => piece?.value ?? null),
+      ),
+      nextPieces: this.gameState.nextPieces.map((piece) => piece.value),
+    };
+
+    localStorage.setItem(saveKey, JSON.stringify(serializableState));
+  }
+
+  private reset() {
     this.gameState = {
       grid: Array(gridHeight)
         .fill([])
@@ -94,7 +148,12 @@ class TetrisGame {
     this.createNewGameButton();
     this.createColumnAreas();
     this.createActiveColumnIndicator();
+  }
+
+  private startNewGame() {
+    this.reset();
     this.generateNextPieces();
+    this.saveGame();
   }
 
   private createGridBackground(): void {
@@ -168,7 +227,7 @@ class TetrisGame {
     this.updateActiveColumnIndicator();
 
     // Update next piece position to follow selected column
-    this.updateNextPiecePosition();
+    this.updateVeryNextPiecePosition();
   }
 
   private updateActiveColumnIndicator(): void {
@@ -178,7 +237,7 @@ class TetrisGame {
     });
   }
 
-  private updateNextPiecePosition(): void {
+  private updateVeryNextPiecePosition(): void {
     const { element } = this.gameState.nextPieces[2];
 
     element.style.transitionDuration = `${columnAnimationTime}s`;
@@ -195,17 +254,19 @@ class TetrisGame {
       this.gameState.nextPieces.unshift(this.createNewQueueElement(newValue));
     }
 
-    requestAnimationFrame(() => {
-      const queue = this.gameState.nextPieces.slice(0, 2);
-      for (const [index, { element }] of queue.entries()) {
-        setCellSizeStyles(element, {
-          left: padding + index * (1 + cellGap),
-          top: padding,
-        });
-      }
+    requestAnimationFrame(() => this.updateNextPiecePositions());
+  }
 
-      this.updateNextPiecePosition();
-    });
+  private updateNextPiecePositions() {
+    const queue = this.gameState.nextPieces.slice(0, 2);
+    for (const [index, { element }] of queue.entries()) {
+      setCellSizeStyles(element, {
+        left: padding + index * (1 + cellGap),
+        top: padding,
+      });
+    }
+
+    this.updateVeryNextPiecePosition();
   }
 
   private createNewPiece(
@@ -264,6 +325,8 @@ class TetrisGame {
       activePieces = [...newDroppingPieces, ...mergedPieces];
       droppingPieces = newDroppingPieces;
     }
+
+    this.saveGame();
   }
 
   private getPieceMergeGroups(): PieceWithPosition[][] {
