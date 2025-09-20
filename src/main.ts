@@ -15,6 +15,10 @@ const gridTop = 2 + cellGap + padding * 2;
 const fullWidth = gridWidth + (gridWidth - 1) * cellGap + padding * 2;
 const fullHeight = gridTop + gridHeight + (gridHeight - 1) * cellGap + padding;
 
+const columnAnimationTime = 0.1;
+const dropAnimationTime = 0.5;
+const mergeAnimationTime = 0.3;
+
 interface PieceHandler {
   value: number;
   element: HTMLElement;
@@ -137,6 +141,7 @@ class TetrisGame {
       width: 1 + cellGap,
       height: (gridHeight + 1) * (1 + cellGap),
     });
+    this.activeColumnIndicator.style.transitionDuration = `${columnAnimationTime}s`;
     this.updateActiveColumnIndicator();
     this.gridElement.appendChild(this.activeColumnIndicator);
   }
@@ -161,7 +166,7 @@ class TetrisGame {
   private updateNextPiecePosition(): void {
     const { element } = this.gameState.nextPieces[2];
 
-    element.style.transitionDuration = "0.1s";
+    element.style.transitionDuration = `${columnAnimationTime}s`;
     setCellSizeStyles(element, {
       top: padding + 1 + padding,
       left: padding + this.gameState.selectedColumn * (1 + cellGap),
@@ -222,12 +227,10 @@ class TetrisGame {
 
     this.gameState.grid[row][col] = piece;
 
-    const animationTime = 0.5;
-
     // Move the first queue element (next piece) to the grid position
-    piece.element.style.transitionDuration = `${animationTime}s`;
+    piece.element.style.transitionDuration = `${dropAnimationTime}s`;
     this.setPiecePosition(piece, row, col);
-    await this.sleep(animationTime);
+    await this.sleep(dropAnimationTime);
 
     const directions = [
       { col: -1, row: 0 },
@@ -269,7 +272,7 @@ class TetrisGame {
         const piece = this.createNewPiece(
           newValue,
           this.getPiecePosition(row, col),
-          animationTime,
+          mergeAnimationTime,
         );
         piece.element.style.opacity = "0";
         return piece;
@@ -284,12 +287,12 @@ class TetrisGame {
         this.setPiecePosition(piece, mergeRow, mergeCol);
         piece.element.style.opacity = "1";
       }
-      await this.sleep(animationTime);
+      await this.sleep(mergeAnimationTime);
       for (const { piece } of piecesToMerge) {
         piece.element.remove();
       }
-      for (const [index, piece] of pieceClones.entries()) {
-        if (index !== 0) {
+      for (const piece of pieceClones) {
+        if (piece !== mergePiece) {
           piece.element.remove();
         }
       }
@@ -305,7 +308,6 @@ class TetrisGame {
 
   private setPiecePosition(piece: PieceHandler, row: number, col: number) {
     setCellSizeStyles(piece.element, this.getPiecePosition(row, col));
-    this.gameState.grid[row][col] = piece;
   }
 
   private getLowestEmptyRow(col: number): number {
