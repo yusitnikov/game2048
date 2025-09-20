@@ -38,8 +38,8 @@ class TetrisGame {
       isGameRunning: false,
     };
 
-    this.initializeDOM();
     this.generateNextPieces();
+    this.initializeDOM();
     this.startGame();
     this.setupResizeListener();
   }
@@ -123,30 +123,33 @@ class TetrisGame {
   private createQueueElements(): void {
     this.queueElements = [];
 
-    // Row 1: 1st in queue (next to drop) - will be positioned above selected column
-    const nextPieceCell = document.createElement("div");
-    nextPieceCell.className = "cell";
-    this.gridElement.appendChild(nextPieceCell);
-    this.queueElements.push(nextPieceCell);
+    // Create elements for the initial 3 pieces in the queue
+    for (let i = 0; i < 3; i++) {
+      const value = this.gameState.nextPieces[i];
+      const element = document.createElement("div");
+      element.className = getCellClasses(value);
+      element.textContent = formatCellLabel(value);
 
-    // Row 0: 2nd and 3rd in queue (fixed position)
-    const secondPieceCell = document.createElement("div");
-    secondPieceCell.className = "cell";
-    setCellSizeStyles(secondPieceCell, {
-      top: padding,
-      left: padding + 1 + cellGap,
-    });
-    this.gridElement.appendChild(secondPieceCell);
-    this.queueElements.push(secondPieceCell);
+      if (i === 0) {
+        // First element (next to drop) - will be positioned above selected column
+        // Position will be set by updateNextPiecePosition()
+      } else if (i === 1) {
+        // Second element
+        setCellSizeStyles(element, {
+          top: padding,
+          left: padding + 1 + cellGap,
+        });
+      } else if (i === 2) {
+        // Third element
+        setCellSizeStyles(element, {
+          top: padding,
+          left: padding,
+        });
+      }
 
-    const thirdPieceCell = document.createElement("div");
-    thirdPieceCell.className = "cell";
-    setCellSizeStyles(thirdPieceCell, {
-      top: padding,
-      left: padding,
-    });
-    this.gridElement.appendChild(thirdPieceCell);
-    this.queueElements.push(thirdPieceCell);
+      this.gridElement.appendChild(element);
+      this.queueElements.push(element);
+    }
   }
 
   private setSelectedColumn(col: number): void {
@@ -179,31 +182,83 @@ class TetrisGame {
   private generateNextPieces(): void {
     while (this.gameState.nextPieces.length < 3) {
       const randomIndex = Math.floor(Math.random() * POWERS_OF_2.length);
-      this.gameState.nextPieces.push(POWERS_OF_2[randomIndex]);
+      const newValue = POWERS_OF_2[randomIndex];
+      this.gameState.nextPieces.push(newValue);
+
+      // If we need a new queue element, create it (only if DOM is initialized)
+      if (this.gridElement && this.queueElements.length < 3) {
+        this.createNewQueueElement(newValue);
+      }
     }
-    this.updateNextQueueDisplay();
+    // Only update display if DOM is ready
+    if (this.gridElement) {
+      this.updateNextQueueDisplay();
+    }
+  }
+
+  private shiftQueueElements(): void {
+    // Move remaining queue elements to their new positions
+    this.queueElements.forEach((element, index) => {
+      if (index === 0) {
+        // First element becomes the next piece - position above selected column
+        this.updateNextPiecePosition();
+      } else if (index === 1) {
+        // Second element moves to position 1,1
+        setCellSizeStyles(element, {
+          top: padding,
+          left: padding + 1 + cellGap,
+        });
+      } else if (index === 2) {
+        // Third element moves to position 0,0
+        setCellSizeStyles(element, {
+          top: padding,
+          left: padding,
+        });
+      }
+    });
+  }
+
+  private createNewQueueElement(value: number): void {
+    const newElement = document.createElement("div");
+    newElement.className = getCellClasses(value);
+    newElement.textContent = formatCellLabel(value);
+
+    // Position the new element at the third position initially
+    setCellSizeStyles(newElement, {
+      top: padding,
+      left: padding,
+    });
+
+    this.gridElement.appendChild(newElement);
+    this.queueElements.push(newElement);
   }
 
   private updateNextQueueDisplay(): void {
-    this.gameState.nextPieces.forEach((value, index) => {
-      if (index < this.queueElements.length) {
-        const queueElement = this.queueElements[index];
-        queueElement.className = getCellClasses(value);
-        queueElement.textContent = formatCellLabel(value);
-      }
-    });
+    // Only update the display of existing queue elements, don't change their content
+    // The content is set when elements are created and should preserve their identity
   }
 
   private dropPiece(col: number): void {
     if (!this.canDropInColumn(col)) return;
 
     const nextValue = this.gameState.nextPieces.shift()!;
-    this.generateNextPieces();
 
     const targetRow = this.getLowestEmptyRow(col);
     if (targetRow !== -1) {
       this.gameState.grid[targetRow][col] = nextValue;
-      this.createGameCell(targetRow, col, nextValue);
+
+      // Move the first queue element (next piece) to the grid position
+      const droppedElement = this.queueElements.shift()!;
+      setCellSizeStyles(droppedElement, {
+        top: gridTop + targetRow * (1 + cellGap),
+        left: padding + col * (1 + cellGap),
+      });
+
+      // Shift remaining queue elements to new positions
+      this.shiftQueueElements();
+
+      // Add new piece to queue and create new element for it
+      this.generateNextPieces();
     }
   }
 
@@ -218,17 +273,6 @@ class TetrisGame {
       }
     }
     return -1;
-  }
-
-  private createGameCell(row: number, col: number, value: number): void {
-    const cell = document.createElement("div");
-    cell.className = getCellClasses(value);
-    cell.textContent = formatCellLabel(value);
-    setCellSizeStyles(cell, {
-      top: gridTop + row * (1 + cellGap),
-      left: padding + col * (1 + cellGap),
-    });
-    this.gridElement.appendChild(cell);
   }
 
   private calculateCellSize(): void {
