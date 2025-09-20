@@ -31,6 +31,7 @@ class TetrisGame {
   private readonly gridElement: HTMLElement;
   private gameState!: GameState;
   private activeColumnIndicator!: HTMLElement;
+  private animationsQueue = Promise.resolve();
 
   constructor() {
     const app = document.querySelector<HTMLDivElement>("#app")!;
@@ -41,6 +42,15 @@ class TetrisGame {
     this.setupResizeListener();
 
     this.startNewGame();
+  }
+
+  private animate(callback: () => Promise<void> | void) {
+    this.animationsQueue = this.animationsQueue.then(callback);
+    return this.animationsQueue;
+  }
+
+  private sleep(seconds: number) {
+    return new Promise<void>((resolve) => setTimeout(resolve, seconds * 1000));
   }
 
   private startNewGame(): void {
@@ -82,7 +92,9 @@ class TetrisGame {
       left: fullWidth - padding - 1,
     });
     button.innerText = "⟳";
-    button.addEventListener("click", () => this.startNewGame());
+    button.addEventListener("click", () =>
+      this.animate(() => this.startNewGame()),
+    );
     this.gridElement.appendChild(button);
   }
 
@@ -103,9 +115,9 @@ class TetrisGame {
         this.setSelectedColumn(col);
       });
 
-      columnArea.addEventListener("click", () => {
-        this.dropPiece(col);
-      });
+      columnArea.addEventListener("click", () =>
+        this.animate(() => this.dropPiece(col)),
+      );
 
       this.gridElement.appendChild(columnArea);
     }
@@ -190,24 +202,31 @@ class TetrisGame {
     return newElement;
   }
 
-  private dropPiece(col: number): void {
-    const targetRow = this.getLowestEmptyRow(col);
-    if (targetRow < 0) {
+  private async dropPiece(col: number) {
+    const row = this.getLowestEmptyRow(col);
+    if (row < 0) {
       return;
     }
 
-    const nextValue = this.gameState.nextPieces.pop()!;
-    this.gameState.grid[targetRow][col] = nextValue;
+    const piece = this.gameState.nextPieces.pop()!;
+    this.generateNextPieces();
+
+    this.gameState.grid[row][col] = piece;
+
+    const animationTime = 0.5;
 
     // Move the first queue element (next piece) to the grid position
-    nextValue.element.style.transitionDuration = "0.5s";
-    setCellSizeStyles(nextValue.element, {
-      top: gridTop + targetRow * (1 + cellGap),
+    piece.element.style.transitionDuration = `${animationTime}s`;
+    this.setPiecePosition(piece, row, col);
+    await this.sleep(animationTime);
+  }
+
+  private setPiecePosition(piece: PieceHandler, row: number, col: number) {
+    setCellSizeStyles(piece.element, {
+      top: gridTop + row * (1 + cellGap),
       left: padding + col * (1 + cellGap),
     });
-
-    // Add new piece to queue and create new element for it
-    this.generateNextPieces();
+    this.gameState.grid[row][col] = piece;
   }
 
   private getLowestEmptyRow(col: number): number {

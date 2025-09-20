@@ -61,10 +61,8 @@ body {
     background: #ffffff22;
 }
 
-.active-column-indicator, .grid .cell {
-    transition-property: left, top;
-    transition-timing-function: ease-out;
-    transition-duration: 0.1s;
+.active-column-indicator, .cell {
+    transition: all ease-out 0.1s;
 }
 
 .cell {
@@ -74,7 +72,6 @@ body {
     align-items: center;
     justify-content: center;
     font-weight: bold;
-    transition: background-color 0.1s;
     width: var(--cell-size);
     height: var(--cell-size);
 }
