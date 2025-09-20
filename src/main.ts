@@ -170,7 +170,7 @@ class TetrisGame {
 
   private generateNextPieces(): void {
     while (this.gameState.nextPieces.length < 3) {
-      const randomIndex = Math.floor(Math.random() * POWERS_OF_2.length);
+      const randomIndex = Math.floor(Math.random() * 6);
       const newValue = POWERS_OF_2[randomIndex];
       this.gameState.nextPieces.unshift(this.createNewQueueElement(newValue));
     }
