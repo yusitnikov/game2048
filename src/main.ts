@@ -4,11 +4,6 @@ const GRID_WIDTH = 6;
 const GRID_HEIGHT = 7;
 const POWERS_OF_2 = [2, 4, 8, 16, 32, 64, 128, 256, 512, 1024];
 
-interface GamePiece {
-  value: number;
-  color: string;
-  fontSize: string;
-}
 
 interface GameState {
   grid: (number | null)[][];
@@ -132,36 +127,12 @@ class TetrisGame {
 
     this.gameState.nextPieces.forEach(value => {
       const pieceElement = document.createElement("div");
-      pieceElement.className = "next-piece";
-      const piece = this.getPieceConfig(value);
+      pieceElement.className = `next-piece piece-${value}`;
       pieceElement.textContent = value.toString();
-      pieceElement.style.backgroundColor = piece.color;
-      pieceElement.style.fontSize = piece.fontSize;
-      pieceElement.style.color = this.getTextColor(piece.color);
       this.nextQueueElement.appendChild(pieceElement);
     });
   }
 
-  private getPieceConfig(value: number): GamePiece {
-    const configs: { [key: number]: GamePiece } = {
-      2: { value: 2, color: "#eee4da", fontSize: "24px" },
-      4: { value: 4, color: "#ede0c8", fontSize: "24px" },
-      8: { value: 8, color: "#f2b179", fontSize: "24px" },
-      16: { value: 16, color: "#f59563", fontSize: "22px" },
-      32: { value: 32, color: "#f67c5f", fontSize: "22px" },
-      64: { value: 64, color: "#f65e3b", fontSize: "22px" },
-      128: { value: 128, color: "#edcf72", fontSize: "20px" },
-      256: { value: 256, color: "#edcc61", fontSize: "20px" },
-      512: { value: 512, color: "#edc850", fontSize: "20px" },
-      1024: { value: 1024, color: "#edc53f", fontSize: "18px" }
-    };
-    return configs[value] || configs[2];
-  }
-
-  private getTextColor(backgroundColor: string): string {
-    const lightColors = ["#eee4da", "#ede0c8"];
-    return lightColors.includes(backgroundColor) ? "#776e65" : "#f9f6f2";
-  }
 
   private dropPiece(col: number): void {
     if (!this.canDropInColumn(col)) return;
@@ -198,19 +169,19 @@ class TetrisGame {
       const col = index % GRID_WIDTH;
       const value = this.gameState.grid[row][col];
 
+      // Remove all piece classes
+      htmlCell.className = htmlCell.className.replace(/piece-\d+/g, '').trim();
+
       if (value !== null) {
-        const piece = this.getPieceConfig(value);
         htmlCell.textContent = value.toString();
-        htmlCell.style.backgroundColor = piece.color;
-        htmlCell.style.fontSize = piece.fontSize;
-        htmlCell.style.color = this.getTextColor(piece.color);
-        htmlCell.classList.add("occupied");
+        htmlCell.classList.add("occupied", `piece-${value}`);
       } else {
         htmlCell.textContent = "";
-        htmlCell.style.backgroundColor = "#ecf0f1";
-        htmlCell.style.fontSize = "";
-        htmlCell.style.color = "";
         htmlCell.classList.remove("occupied");
+        // Ensure base cell class remains
+        if (!htmlCell.classList.contains("cell")) {
+          htmlCell.classList.add("cell");
+        }
       }
     });
   }

@@ -115,3 +115,74 @@ body {
 .column-indicator.active {
   opacity: 1;
 }
+
+/* Power of 2 piece styles */
+.cell.piece-2,
+.next-piece.piece-2 {
+  background-color: #eee4da;
+  color: #776e65;
+  font-size: 24px;
+}
+
+.cell.piece-4,
+.next-piece.piece-4 {
+  background-color: #ede0c8;
+  color: #776e65;
+  font-size: 24px;
+}
+
+.cell.piece-8,
+.next-piece.piece-8 {
+  background-color: #f2b179;
+  color: #f9f6f2;
+  font-size: 24px;
+}
+
+.cell.piece-16,
+.next-piece.piece-16 {
+  background-color: #f59563;
+  color: #f9f6f2;
+  font-size: 22px;
+}
+
+.cell.piece-32,
+.next-piece.piece-32 {
+  background-color: #f67c5f;
+  color: #f9f6f2;
+  font-size: 22px;
+}
+
+.cell.piece-64,
+.next-piece.piece-64 {
+  background-color: #f65e3b;
+  color: #f9f6f2;
+  font-size: 22px;
+}
+
+.cell.piece-128,
+.next-piece.piece-128 {
+  background-color: #edcf72;
+  color: #f9f6f2;
+  font-size: 20px;
+}
+
+.cell.piece-256,
+.next-piece.piece-256 {
+  background-color: #edcc61;
+  color: #f9f6f2;
+  font-size: 20px;
+}
+
+.cell.piece-512,
+.next-piece.piece-512 {
+  background-color: #edc850;
+  color: #f9f6f2;
+  font-size: 20px;
+}
+
+.cell.piece-1024,
+.next-piece.piece-1024 {
+  background-color: #edc53f;
+  color: #f9f6f2;
+  font-size: 18px;
+}
