@@ -255,8 +255,10 @@ class TetrisGame {
   }
 
   private generateNextPieces(): void {
+    const minDigitIndex = this.getMinAvailableDigitIndex();
+
     while (this.gameState.nextPieces.length < 3) {
-      const randomIndex = Math.floor(Math.random() * 6);
+      const randomIndex = Math.floor(minDigitIndex + 0.5 + Math.random() * 5);
       const newValue = POWERS_OF_2[randomIndex];
       this.gameState.nextPieces.unshift(this.createNewQueueElement(newValue));
     }
@@ -331,6 +333,16 @@ class TetrisGame {
       }
 
       const mergedPieces = await this.mergePieces(activePieces);
+
+      const minDigit = POWERS_OF_2[this.getMinAvailableDigitIndex()];
+      for (const [row, rowArray] of this.gameState.grid.entries()) {
+        for (const [col, piece] of rowArray.entries()) {
+          if (piece && piece.value < minDigit) {
+            this.gameState.grid[row][col] = undefined;
+            piece.element.remove();
+          }
+        }
+      }
 
       const newDroppingPieces = this.getPiecesToDrop();
       activePieces = [...newDroppingPieces, ...mergedPieces];
@@ -511,6 +523,34 @@ class TetrisGame {
       }
     }
     return -1;
+  }
+
+  private getMaxDigitInGrid() {
+    let max = 2;
+
+    for (const row of this.gameState.grid) {
+      for (const piece of row) {
+        if (piece?.value !== undefined) {
+          max = Math.max(max, piece.value);
+        }
+      }
+    }
+
+    return max;
+  }
+
+  private getMinAvailableDigitIndex() {
+    const maxDigitInGrid = this.getMaxDigitInGrid();
+    if (maxDigitInGrid >= 128 * 1024) {
+      return 3;
+    }
+    if (maxDigitInGrid >= 16 * 1024) {
+      return 2;
+    }
+    if (maxDigitInGrid >= 2 * 1024) {
+      return 1;
+    }
+    return 0;
   }
 
   private calculateCellSize(): void {
