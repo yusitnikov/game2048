@@ -182,7 +182,10 @@ class TetrisGame {
       top: padding,
       left: fullWidth - padding - 1,
     });
-    button.innerText = "⟳";
+    button.innerHTML = `<svg width="24" height="24" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="7" fill="none" stroke="currentColor" stroke-width="2" stroke-dasharray="38 5" transform="rotate(30 12 12)"/>
+      <polygon fill="currentColor" points="20,4 20,10 14,10"/>
+    </svg>`;
     button.addEventListener("click", () =>
       this.animate(() => this.startNewGame()),
     );

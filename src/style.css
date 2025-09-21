@@ -49,8 +49,11 @@ body {
     color: #000;
     pointer-events: initial;
     cursor: pointer;
-    font-size: calc(var(--cell-size) * 0.8);
-    font-weight: normal;
+}
+
+.new-game-button svg {
+    width: calc(var(--cell-size) * 0.7);
+    height: calc(var(--cell-size) * 0.7);
 }
 
 .column-area {
