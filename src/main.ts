@@ -245,7 +245,7 @@ class TetrisGame {
   }
 
   private updateVeryNextPiecePosition(): void {
-    const { element } = this.gameState.nextPieces[2];
+    const { element } = this.gameState.nextPieces[3];
 
     element.style.transitionDuration = `${columnAnimationTime}s`;
     setCellSizeStyles(element, {
@@ -257,7 +257,7 @@ class TetrisGame {
   private generateNextPieces(): void {
     const minDigitIndex = this.getMinAvailableDigitIndex();
 
-    while (this.gameState.nextPieces.length < 3) {
+    while (this.gameState.nextPieces.length < 4) {
       const randomIndex = Math.floor(minDigitIndex + 0.5 + Math.random() * 5);
       const newValue = POWERS_OF_2[randomIndex];
       this.gameState.nextPieces.unshift(this.createNewQueueElement(newValue));
@@ -267,7 +267,7 @@ class TetrisGame {
   }
 
   private updateNextPiecePositions() {
-    const queue = this.gameState.nextPieces.slice(0, 2);
+    const queue = this.gameState.nextPieces.slice(0, 3);
     for (const [index, { element }] of queue.entries()) {
       setCellSizeStyles(element, {
         left: padding + index * (1 + cellGap),
