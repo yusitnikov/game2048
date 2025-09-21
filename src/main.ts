@@ -159,10 +159,6 @@ class TetrisGame {
 
   private startNewGame() {
     this.reset();
-    this.gameState.nextPieces.unshift(this.createNewQueueElement(1024));
-    this.gameState.nextPieces.unshift(this.createNewQueueElement(2));
-    this.gameState.nextPieces.unshift(this.createNewQueueElement(1024));
-    this.gameState.nextPieces.unshift(this.createNewQueueElement(2));
     this.generateNextPieces();
     this.saveGame();
   }
