@@ -159,6 +159,10 @@ class TetrisGame {
 
   private startNewGame() {
     this.reset();
+    this.gameState.nextPieces.unshift(this.createNewQueueElement(1024));
+    this.gameState.nextPieces.unshift(this.createNewQueueElement(2));
+    this.gameState.nextPieces.unshift(this.createNewQueueElement(1024));
+    this.gameState.nextPieces.unshift(this.createNewQueueElement(2));
     this.generateNextPieces();
     this.saveGame();
   }
@@ -337,15 +341,7 @@ class TetrisGame {
 
       const mergedPieces = await this.mergePieces(activePieces);
 
-      const minDigit = POWERS_OF_2[this.getMinAvailableDigitIndex()];
-      for (const [row, rowArray] of this.gameState.grid.entries()) {
-        for (const [col, piece] of rowArray.entries()) {
-          if (piece && piece.value < minDigit) {
-            this.gameState.grid[row][col] = undefined;
-            piece.element.remove();
-          }
-        }
-      }
+      await this.removeSmallPieces();
 
       const newDroppingPieces = this.getPiecesToDrop();
       activePieces = [...newDroppingPieces, ...mergedPieces];
@@ -359,6 +355,42 @@ class TetrisGame {
     }
 
     this.saveGame();
+  }
+
+  private async removeSmallPieces() {
+    const minDigit = POWERS_OF_2[this.getMinAvailableDigitIndex()];
+
+    const removedPieces = this.gameState.nextPieces
+      .filter(({ value }) => value < minDigit)
+      .map(({ element }) => ({ element, top: -1 }));
+    this.gameState.nextPieces = this.gameState.nextPieces.filter(
+      ({ value }) => value >= minDigit,
+    );
+
+    for (const [row, rowArray] of this.gameState.grid.entries()) {
+      for (const [col, piece] of rowArray.entries()) {
+        if (piece && piece.value < minDigit) {
+          this.gameState.grid[row][col] = undefined;
+          removedPieces.push({ element: piece.element, top: fullHeight + 1 });
+        }
+      }
+    }
+
+    if (!removedPieces.length) {
+      return;
+    }
+
+    const animationTime = 0.5;
+    for (const { element, top } of removedPieces) {
+      setCellSizeStyles(element, { top });
+      element.style.opacity = "0";
+      element.style.transitionDuration = `${animationTime}s`;
+    }
+    this.generateNextPieces();
+    await this.sleep(animationTime);
+    for (const { element } of removedPieces) {
+      element.remove();
+    }
   }
 
   private getPieceMergeGroups(): PieceWithPosition[][] {
