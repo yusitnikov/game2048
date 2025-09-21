@@ -46,6 +46,7 @@ body {
     border: none;
     outline: none;
     background: #fff;
+    color: #000;
     pointer-events: initial;
     cursor: pointer;
     font-size: calc(var(--cell-size) * 0.8);
