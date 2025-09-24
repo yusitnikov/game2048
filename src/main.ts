@@ -572,6 +572,9 @@ class TetrisGame {
 
   private getMinAvailableDigitIndex() {
     const maxDigitInGrid = this.getMaxDigitInGrid();
+    if (maxDigitInGrid >= 1024 * 1024) {
+      return 4;
+    }
     if (maxDigitInGrid >= 128 * 1024) {
       return 3;
     }
